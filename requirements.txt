@@ -1,9 +1,0 @@
-# Core dependencies
-google-generativeai
-pvporcupine
-PyAudio
-SpeechRecognition
-gTTS
-pygame
-numpy
-python-dotenv
