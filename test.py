@@ -1,60 +1,47 @@
-from gtts import gTTS
-from gtts.lang import tts_langs
 import os
-import sys
+import gtts
+import pygame
+import tempfile
 
-def text_to_speech(text, language='en', output_file='output.mp3'):
-    """
-    Convert text to speech using Google Text-to-Speech API
+def speak_response(response, language="english"):
+    # Initialize pygame mixer
+    pygame.mixer.init()
     
-    Args:
-        text (str): Text to convert to speech
-        language (str): Language code (default: 'en')
-        output_file (str): Output audio file name (default: 'output.mp3')
-    """
     try:
-        # Verify language is supported
-        supported_langs = tts_langs()
-        if language not in supported_langs:
-            print(f"Error: Language code '{language}' is not supported")
-            print("Supported languages:", ", ".join(supported_langs.keys()))
-            return False
+        # Configure TTS based on language
+        if language == "english":
+            tts = gtts.gTTS(text=response, lang='en', tld='co.in')
+        else:
+            tts = gtts.gTTS(text=response, lang='ml', slow=False)
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+            # Save audio to temp file
+            tts.save(temp_file.name)
             
-        # Create gTTS object
-        tts = gTTS(text=text, lang=language, slow=False)
-        
-        # Save to file
-        tts.save(output_file)
-        
-        # Try to play the file (platform dependent)
-        try:
-            if sys.platform == 'darwin':  # macOS
-                os.system(f'afplay {output_file}')
-            elif sys.platform == 'win32':  # Windows
-                os.system(f'start {output_file}')
-            elif sys.platform == 'linux':  # Linux
-                os.system(f'xdg-open {output_file}')
-        except:
-            print(f"Audio file saved as {output_file}")
-            
-        return True
-        
+            try:
+                # Play the audio
+                pygame.mixer.music.load(temp_file.name)
+                pygame.mixer.music.play()
+                
+                # Wait for playback to finish
+                while pygame.mixer.music.get_busy():
+                    pygame.time.Clock().tick(10)
+                    
+            finally:
+                # Cleanup
+                pygame.mixer.music.unload()
+                pygame.mixer.quit()
+                os.unlink(temp_file.name)
+                
     except Exception as e:
-        print(f"Error occurred: {str(e)}")
-        return False
+        print(f"TTS Error ({language}): {str(e)}")
+        return
 
-# Example usage
+# Test the function
 if __name__ == "__main__":
-    # Simple example
-    text_to_speech("Hello! This is a test of text to speech conversion.")
+    # Test English
+    speak_response("Hello, how are you?", "english")
     
-    # Multiple language example
-    text_to_speech("fuck u fuck u fuck u fuck u ", language='fr', output_file='french.mp3')
-    
-    # Longer text example
-    long_text = """
-    This is a longer piece of text that will be converted to speech.
-    You can write multiple paragraphs and they will all be processed together.
-    The gTTS library will handle the conversion appropriately.
-    """
-    text_to_speech(long_text, output_file='long_text.mp3')
+    # Test Malayalam
+    speak_response("നമസ്കാരം", "malayalam")
